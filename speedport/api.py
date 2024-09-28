@@ -40,6 +40,32 @@ def need_auth(func):
 
 
 class SpeedportApi:
+
+    _SECURE_STATUS_DATA = "data/SecureStatus.json"
+    _IP_PHONE_HANDLER_DATA = "data/IPPhoneHandler.json"
+    _ROUTER_DATA = "data/Router.json"
+    _STATUS_DATA = "data/Status.json"
+    _DEVICES_DATA = "data/DeviceList.json"
+    _LOGIN_DATA = "data/Login.json"
+
+    _WPS_REFERRER = "html/content/network/wlan_wps.html"
+    _WPS_DATA = "data/WPSStatus.json"
+
+    _WPS_CHANGE_REFERRER = "html/content/network/wlan_wps.html"
+    _WPS_CHANGE_DATA = "data/WLANAccess.json"
+
+    _IP_REFERER = "html/content/internet/con_ipdata.html"
+    _IP_DATA = "data/IPData.json"
+
+    _PHONE_CALLS_REFERRER = "html/content/phone/phone_call_taken.html"
+    _PHONE_CALLS_DATA = "data/PhoneCalls.json"
+
+    _RECONNECT_REFERRER = "html/content/internet/con_ipdata.html"
+    _RECONNECT_DATA = "data/Connect.json"
+
+    _REBOOT_REFERRER = "html/content/config/restart.html"
+    _REBOOT_DATA = "data/Reboot.json"
+
     def __init__(
         self,
         host: str = "speedport.ip",
@@ -103,38 +129,35 @@ class SpeedportApi:
 
     @need_auth
     async def get_secure_status(self):
-        return await self.api.get("data/SecureStatus.json", auth=True)
+        return await self.api.get(self._SECURE_STATUS_DATA, auth=True)
 
     @need_auth
     async def get_phone_handler(self):
-        return await self.api.get("data/IPPhoneHandler.json", auth=True)
+        return await self.api.get(self._IP_PHONE_HANDLER_DATA, auth=True)
 
     async def get_router(self):
-        return await self.api.get("data/Router.json")
+        return await self.api.get(self._ROUTER_DATA)
 
     async def get_status(self):
-        return await self.api.get("data/Status.json")
+        return await self.api.get(self._STATUS_DATA)
 
     async def get_devices(self):
-        return await self.api.get("data/DeviceList.json")
+        return await self.api.get(self._DEVICES_DATA)
 
     async def get_login(self):
-        return await self.api.get("data/Login.json")
+        return await self.api.get(self._LOGIN_DATA)
 
     @need_auth
     async def get_ip_data(self):
-        referer = "html/content/internet/con_ipdata.html"
-        return await self.api.get("data/IPData.json", referer=referer, auth=True)
+        return await self.api.get(self._IP_DATA, referer=self._IP_REFERER, auth=True)
 
     @need_auth
     async def get_wps_state(self):
-        referer = "html/content/network/wlan_wps.html"
-        return await self.api.get("data/WPSStatus.json", referer=referer)
+        return await self.api.get(self._WPS_DATA, referer=self._WPS_REFERRER)
 
     @need_auth
     async def get_phone_calls(self):
-        referer = "html/content/phone/phone_call_taken.html"
-        return await self.api.get("data/PhoneCalls.json", referer=referer, auth=True)
+        return await self.api.get(self._PHONE_CALLS_DATA, referer=self._PHONE_CALLS_REFERRER, auth=True)
 
     @need_auth
     async def set_wifi(self, status=True, guest=False, office=False):
@@ -157,28 +180,44 @@ class SpeedportApi:
     async def wps_on(self):
         _LOGGER.info("Enable wps connect...")
         await self.api.post(
-            "data/WLANAccess.json",
+            self._WPS_CHANGE_DATA,
             {"wlan_add": "on", "wps_key": "connect"},
-            "html/content/network/wlan_wps.html",
+            self._WPS_CHANGE_REFERRER,
         )
 
     @need_auth
     async def reconnect(self):
         _LOGGER.info("Reconnect with internet provider...")
         await self.api.post(
-            "data/Connect.json",
+            self._RECONNECT_DATA,
             {"req_connect": "reconnect"},
-            "html/content/internet/con_ipdata.html",
+            self._RECONNECT_REFERRER,
         )
 
     @need_auth
     async def reboot(self):
         _LOGGER.info("Reboot speedport...")
         await self.api.post(
-            "data/Reboot.json",
+            self._REBOOT_DATA,
             {"reboot_device": "true"},
-            "html/content/config/restart.html",
+            self._REBOOT_REFERRER,
         )
 
     async def login(self, password=""):
         return await self.api.login(password or self.password)
+
+
+class SpeedportSmart4Api(SpeedportApi):
+    pass
+
+
+class SpeedportSmart3Api(SpeedportApi):
+    _IP_REFERER = "html/content/internet/connection.html"
+    _IP_DATA = "data/INetIP.json"
+
+    _PHONE_CALLS_REFERRER = "html/content/phone/phone_call_list.html"
+
+    _RECONNECT_REFERRER = "html/content/internet/connection.html"
+    _RECONNECT_DATA = "data/INetIP.json"
+
+    _REBOOT_REFERRER = "html/content/config/problem_handling.html"

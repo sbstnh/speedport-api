@@ -5,15 +5,21 @@ import asyncio
 import logging
 import sys
 import time
+from enum import Enum
 from getpass import getpass
 from pathlib import Path
 
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from speedport.speedport import Speedport
+from speedport.speedport import SpeedportSmart3, SpeedportSmart4
 
 _LOGGER = logging.getLogger("speedport")
+
+
+class SpeedportModel(Enum):
+    SMART3 = "smart3"
+    SMART4 = "smart4"
 
 
 def set_logger(args):
@@ -91,6 +97,10 @@ def get_arguments():
     parser.add_argument(
         "-t", "--table", help="print output as table (default)", action="store_true"
     )
+    parser.add_argument(
+        "-m", "--model", help="select speedport model (smart4, smart3)", default="smart4",
+        type=lambda m: SpeedportModel(m.strip().lower())
+    )
     subparser = parser.add_subparsers(
         title="commands", metavar="COMMAND", required=True
     )
@@ -113,6 +123,10 @@ def get_arguments():
     devices.add_argument("devices", help="List connected devices", action="store_true")
     calls = subparser.add_parser("calls", help="Output calls")
     calls.add_argument("calls", help="List last calls", action="store_true")
+    ip = subparser.add_parser("ip", help="Output IP addresses")
+    ip.add_argument("ip", help="List IP addresses", action="store_true")
+    status = subparser.add_parser("status", help="Output state")
+    status.add_argument("status", help="List state variables", action="store_true")
     return vars(parser.parse_args())
 
 
@@ -135,7 +149,7 @@ async def check_args(speedport, args):
             )
     if args.get("calls"):
         if args.get("batch"):
-            batch_output(await speedport.devices)
+            batch_output(await speedport.calls)
         else:
             print(
                 data_table(
@@ -143,6 +157,11 @@ async def check_args(speedport, args):
                     ["number", "type", "duration", "date"],
                 )
             )
+    if args.get("ip"):
+        await speedport.update_ip_data()
+        print(f"{speedport.public_ip_v4} / {speedport.public_ip_v6}")
+    if args.get("status"):
+        print(speedport.status)
 
 
 async def check_wifi_args(speedport, args):
@@ -167,7 +186,9 @@ async def main():
     if not args.get("devices"):
         if not (password := args["password"]):
             password = getpass("Password of Speedports webinterface: ")
-    async with Speedport(args["host"], password, args.get("https")) as speedport:
+
+    speedport_model_map = {SpeedportModel.SMART3: SpeedportSmart3, SpeedportModel.SMART4: SpeedportSmart4}
+    async with speedport_model_map[args["model"]](args["host"], password, args.get("https")) as speedport:
         await check_wifi_args(speedport, args)
         await check_args(speedport, args)
 

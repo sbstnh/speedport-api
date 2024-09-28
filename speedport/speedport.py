@@ -5,7 +5,7 @@ from datetime import datetime
 import aiohttp
 
 from . import exceptions
-from .api import SpeedportApi
+from .api import SpeedportApi, SpeedportSmart3Api, SpeedportSmart4Api
 from .call import Call
 from .device import WlanDevice
 
@@ -18,22 +18,25 @@ class LoginException(Exception):
 
 
 class Speedport:
+
+    _SPEEDPORT_API = SpeedportApi
+
     def __init__(
         self,
         host: str = "speedport.ip",
         password: str = "",
         https: bool = False,
         session: aiohttp.ClientSession | None = None,
-        pause_time: int = 5,
+        pause_time: int = 5
     ):
         self._api: SpeedportApi | None = None
         self._host: str = host
         self._password: str = password
         self._https: bool = https
         self._session: aiohttp.ClientSession | None = session
-        self._status = {}
-        self._ip_data = {}
-        self._pause_time = pause_time
+        self._status: dict = {}
+        self._ip_data: dict = {}
+        self._pause_time: int = pause_time
 
     async def __aenter__(self):
         return await self.create()
@@ -55,7 +58,7 @@ class Speedport:
             return default
 
     async def create(self):
-        self._api = await SpeedportApi(
+        self._api = await self._SPEEDPORT_API(
             self._host, self._password, self._https, self._session, self._pause_time
         ).create()
         await self.update_status()
@@ -128,6 +131,10 @@ class Speedport:
 
     async def update_status(self):
         self._status = await self.api.get_status()
+
+    @property
+    def status(self):
+        return self._status
 
     @property
     def device_name(self):
@@ -243,3 +250,11 @@ class Speedport:
 
     async def login(self, password=""):
         return await self.api.login(password or self._password)
+
+
+class SpeedportSmart4(Speedport):
+    _SPEEDPORT_API = SpeedportSmart4Api
+
+
+class SpeedportSmart3(Speedport):
+    _SPEEDPORT_API = SpeedportSmart3Api

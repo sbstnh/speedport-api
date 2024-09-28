@@ -15,6 +15,7 @@ pip install speedport-api
 
 ### Supported Devices
 * Speedport Smart 4
+* Speedport Smart 3 (rudimentary, only partially tested)
 
 ### Commandline tool
 With this shipped commandline tool can a speedport in your network be controlled.
